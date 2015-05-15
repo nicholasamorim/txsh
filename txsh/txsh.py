@@ -99,9 +99,13 @@ class Command(object):
 
     def __init__(self, cmd):
         self.cmd = cmd
+        self._args = []
+
+    def bake(self, *args, **kwargs):
+        self._args = self.build_arguments(*args, **kwargs)
 
     def build_arguments(self, *cmd_args, **cmd_kwargs):
-        args = [self.cmd]
+        args = []
         args.extend(cmd_args)
 
         for raw_key, value in cmd_kwargs.items():
@@ -125,6 +129,8 @@ class Command(object):
         txsh_protocol = TxShProcessProtocol(self.cmd, debug=False)
         # Twisted requires the first arg to be the command itself
         args = self.build_arguments(*args, **kwargs)
+        args.insert(0, self.cmd)
+        args.extend(self._args)
         process = reactor.spawnProcess(txsh_protocol, self.cmd, args)
         return process.proto._finished_defer
 
