@@ -15,9 +15,15 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         self._stdin = kwargs.get('_stdin', None)
         self._debug = kwargs.get('debug', False)
         self._finished_defer = defer.Deferred()
+        self._finished_defer.signal = self.sendSignal
         self._status = None
         self._stdout = []
         self._stderr = []
+
+    def sendSignal(self, signal):
+        """
+        """
+        self.transport.signalProcess(signal)
 
     def connectionMade(self):
         """Write to stdin ?
@@ -62,6 +68,11 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
             print 'processExited', status
 
         self._status = getattr(status.value, 'exitCode', 0)
+        print dir(status.value)
+        print status.value.exitCode
+        print status.value.signal
+        print status.value.status
+
 
     def processEnded(self, status):
         """This is called when all the file descriptors associated with the
@@ -70,6 +81,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         ProcessProtocol. The status parameter has the same meaning as it
         does for processExited.
         """
+        print status
         if self._debug:
             print 'onProcessEnded', status
 
@@ -154,11 +166,14 @@ class Command(object):
 
     def __call__(self, *args, **kwargs):
         txsh_protocol = TxShProcessProtocol(self.cmd, debug=False)
+        env = kwargs.get('_env', os.environ)
+
         # Twisted requires the first arg to be the command itself
         args = self.build_arguments(*args, **kwargs)
         args.insert(0, self.cmd)
         args.extend(self._args)
-        process = reactor.spawnProcess(txsh_protocol, self.cmd, args)
+        process = reactor.spawnProcess(
+            txsh_protocol, self.cmd, args, env=env)
         return process.proto._finished_defer
 
 
