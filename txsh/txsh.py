@@ -1,106 +1,12 @@
 import os
 import sys
 from types import ModuleType
-from collections import namedtuple
 
-from twisted.internet import reactor, protocol, defer
+from twisted.python import log
+from twisted.internet import reactor
 
-
-class TxShProcessProtocol(protocol.ProcessProtocol):
-    Output = namedtuple('Output', ['status', 'stdout', 'stderr'])
-
-    def __init__(self, cmd, *args, **kwargs):
-        self.cmd = cmd
-        # self.args = args
-        self._stdin = kwargs.get('_stdin', None)
-        self._debug = kwargs.get('debug', False)
-        self._finished_defer = defer.Deferred()
-        self._finished_defer.signal = self.sendSignal
-        self._status = None
-        self._stdout = []
-        self._stderr = []
-
-    def sendSignal(self, signal):
-        """
-        """
-        self.transport.signalProcess(signal)
-
-    def connectionMade(self):
-        """Write to stdin ?
-        """
-        if self._stdin is not None:
-            self.transport.write(self._stdin)
-            self.transport.closeStdin()
-
-    def outConnectionLost(self):
-        """This is called when the program closes its stdout pipe.
-        This usually happens when the program terminates.
-        """
-        if self._debug:
-            print 'outconnectionlost'
-
-    def errConnectionLost(self):
-        """Same as outConnectionLost, but for stderr instead of stdout.
-        """
-        if self._debug:
-            print 'errconnectionLost'
-
-    def outReceived(self, data):
-        if self._debug:
-            print 'outReceived', data
-        self._stdout.append(data)
-
-    def errReceived(self, data):
-        if self._debug:
-            print 'errReceived', data
-        self._stderr.append(data)
-
-    def processExited(self, status):
-        """This is called when the child process has been reaped, and receives
-        information about the process' exit status. The status is passed in the
-        form of a Failure instance, created with a .value that either holds a
-        ProcessDone object if the process terminated normally (it died of
-        natural causes instead of receiving a signal, and if the exit code
-        was 0), or a ProcessTerminated object (with an .exitCode attribute)
-        if something went wrong.
-        """
-        if self._debug:
-            print 'processExited', status
-
-        self._status = getattr(status.value, 'exitCode', 0)
-        print dir(status.value)
-        print status.value.exitCode
-        print status.value.signal
-        print status.value.status
-
-
-    def processEnded(self, status):
-        """This is called when all the file descriptors associated with the
-        child process have been closed and the process has been reaped. This
-        means it is the last callback which will be made onto a
-        ProcessProtocol. The status parameter has the same meaning as it
-        does for processExited.
-        """
-        print status
-        if self._debug:
-            print 'onProcessEnded', status
-
-        output = self.Output(
-            self._status,
-            ''.join(self._stdout),
-            ''.join(self._stderr))
-        self._finished_defer.callback(output)
-
-
-def resolve_command(cmd):
-    path = which(cmd)
-    if not path:
-        if "_" in cmd:
-            path = which(cmd.replace('_', '-'))
-        if not path:
-            return None
-
-    return path
+from resolvers import resolve_command, which
+from protocols import TxShProcessProtocol, DeferredProcess
 
 
 class Command(object):
@@ -164,38 +70,41 @@ class Command(object):
 
         return args
 
+    def _spawn(self, p, args, env=None):
+        """
+        """
+        return reactor.spawnProcess(p, self.cmd, args, env=env)
+
+    def _make_protocol(self, stdin=None):
+        """
+        """
+        return TxShProcessProtocol(
+            self.cmd,
+            _stdin=stdin,
+            debug=False)
+
     def __call__(self, *args, **kwargs):
-        txsh_protocol = TxShProcessProtocol(self.cmd, debug=False)
         env = kwargs.get('_env', os.environ)
 
+        if args and isinstance(args[0], DeferredProcess):
+            # This is a piped call.
+            d = args[0]
+            d.addCallback(lambda exc: exc.stdout)
+            d.addCallback(lambda stdout: self._make_protocol(stdout))
+            d.addCallback(
+                lambda protocol: self._spawn(protocol, [self.cmd], env))
+            d.addErrback(log.err)
+            d.addCallback(lambda process: process.proto._process_deferred)
+            d.addErrback(log.err)
+            return d
+
+        txsh_protocol = self._make_protocol()
         # Twisted requires the first arg to be the command itself
         args = self.build_arguments(*args, **kwargs)
         args.insert(0, self.cmd)
         args.extend(self._args)
-        process = reactor.spawnProcess(
-            txsh_protocol, self.cmd, args, env=env)
-        return process.proto._finished_defer
-
-
-def which(program):
-    def is_exe(fpath):
-        return (os.path.exists(fpath) and
-                os.access(fpath, os.X_OK) and
-                os.path.isfile(os.path.realpath(fpath)))
-
-    fpath, fname = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        if "PATH" not in os.environ:
-            return None
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-    return None
+        process = self._spawn(txsh_protocol, args, env)
+        return process.proto._process_deferred
 
 
 class Environment(dict):
