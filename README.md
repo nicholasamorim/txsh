@@ -1,4 +1,6 @@
-txsh is a project largely inspired by [sh] (https://github.com/amoffat/sh) is a dynamic wrapper around [Twisted] (http://twistedmatrix.com) ProcessProtocol and spawnProcess that allows you to call any program as if it were a function and return a deferred with its exit code and output:
+## txsh 
+
+txsh is a project *largely* inspired by [sh] (https://github.com/amoffat/sh) is a dynamic wrapper around [Twisted] (http://twistedmatrix.com) ProcessProtocol and spawnProcess that allows you to call any program as if it were a function and return a deferred with its exit code and output:
 
 ```python
 from twisted.internet import reactor
