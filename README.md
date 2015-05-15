@@ -25,3 +25,15 @@ txsh is **not** a collection of system commands implemented in Twisted.
     $> pip install txsh
 
 # Complete documentation @ http://nicholasamorim.github.com/txsh
+
+
+### To-Do
+    - Tests
+    - Subcommands
+    - Redirection of stdout and stderr to file-like objects.
+    - Passing of any object, Queue, or any iterable (list, set, dictionary, etc) to stdin
+    - Custom success exit codes
+    - Raising Failures if exit_code is not successful so user can add errbacks to deal with them.
+    - Glob Expansion
+    - Advanced piping
+    - usePTY
