@@ -90,6 +90,7 @@ class Command(object):
     def __call__(self, *args, **kwargs):
         env = kwargs.pop('_env', os.environ)
         debug = kwargs.pop('_debug', False)
+        _in = kwargs.pop('_in', None)
 
         if args and isinstance(args[0], DeferredProcess):
             # This is a piped call.
@@ -101,7 +102,7 @@ class Command(object):
             d.addCallback(lambda process: process.proto._process_deferred)
             return d
 
-        txsh_protocol = self._make_protocol()
+        txsh_protocol = self._make_protocol(stdin=_in)
         # Twisted requires the first arg to be the command itself
         args = self.build_arguments(*args, **kwargs)
         args.insert(0, self.cmd)
