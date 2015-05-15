@@ -12,7 +12,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
     def __init__(self, cmd, *args, **kwargs):
         self.cmd = cmd
         # self.args = args
-        self._in = kwargs.get('_in', None)
+        self._stdin = kwargs.get('_stdin', None)
         self._debug = kwargs.get('debug', False)
         self._finished_defer = defer.Deferred()
         self._status = None
@@ -22,8 +22,8 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
     def connectionMade(self):
         """Write to stdin ?
         """
-        if self._in is not None:
-            self.transport.write(self._in)
+        if self._stdin is not None:
+            self.transport.write(self._stdin)
             self.transport.closeStdin()
 
     def outConnectionLost(self):
@@ -94,17 +94,44 @@ def resolve_command(cmd):
 class Command(object):
     @staticmethod
     def factory(cmd, **default_kwargs):
+        """
+        """
         cmd = resolve_command(cmd)
         return Command(cmd)
 
     def __init__(self, cmd):
+        """
+        """
         self.cmd = cmd
         self._args = []
 
+    def __str__(self):
+        """
+        """
+        return '{} {}'.format(
+            self.cmd, ' '.join(self._args))
+
     def bake(self, *args, **kwargs):
+        """
+        """
+        new_cmd = Command(self.cmd)
+        new_cmd._bake(*args, **kwargs)
+        return new_cmd
+
+    def _bake(self, *args, **kwargs):
+        """
+        """
         self._args = self.build_arguments(*args, **kwargs)
 
+    def clear(self):
+        """
+        """
+        self._args = []
+        return self
+
     def build_arguments(self, *cmd_args, **cmd_kwargs):
+        """
+        """
         args = []
         args.extend(cmd_args)
 
