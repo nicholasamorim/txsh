@@ -1,7 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 
 
 def which(program):
+    """
+    """
     def is_exe(fpath):
         return (os.path.exists(fpath) and
                 os.access(fpath, os.X_OK) and
@@ -23,6 +27,8 @@ def which(program):
 
 
 def resolve_command(cmd):
+    """
+    """
     path = which(cmd)
     if not path:
         if "_" in cmd:

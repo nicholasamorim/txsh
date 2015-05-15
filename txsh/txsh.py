@@ -1,12 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import os
 import sys
 from types import ModuleType
 
-from twisted.python import log
 from twisted.internet import reactor
 
 from resolvers import resolve_command, which
 from protocols import TxShProcessProtocol, DeferredProcess
+
+__version__ = "0.1"
+__project_url__ = "https://github.com/nicholasamorim/txsh"
 
 
 class Command(object):
@@ -70,32 +74,31 @@ class Command(object):
 
         return args
 
-    def _spawn(self, p, args, env=None):
+    def _spawn(self, protocol, args, env=None):
         """
         """
-        return reactor.spawnProcess(p, self.cmd, args, env=env)
+        return reactor.spawnProcess(protocol, self.cmd, args, env=env)
 
-    def _make_protocol(self, stdin=None):
+    def _make_protocol(self, stdin=None, debug=False):
         """
         """
         return TxShProcessProtocol(
             self.cmd,
             _stdin=stdin,
-            debug=False)
+            _debug=debug)
 
     def __call__(self, *args, **kwargs):
-        env = kwargs.get('_env', os.environ)
+        env = kwargs.pop('_env', os.environ)
+        debug = kwargs.pop('_debug', False)
 
         if args and isinstance(args[0], DeferredProcess):
             # This is a piped call.
             d = args[0]
             d.addCallback(lambda exc: exc.stdout)
-            d.addCallback(lambda stdout: self._make_protocol(stdout))
+            d.addCallback(lambda stdout: self._make_protocol(stdout, debug))
             d.addCallback(
                 lambda protocol: self._spawn(protocol, [self.cmd], env))
-            d.addErrback(log.err)
             d.addCallback(lambda process: process.proto._process_deferred)
-            d.addErrback(log.err)
             return d
 
         txsh_protocol = self._make_protocol()
@@ -174,10 +177,10 @@ class Environment(dict):
 
         return Command.factory(cmd)
 
-    # methods that begin with "b_" are custom builtins and will override any
-    # program that exists in our path.  this is useful for things like
-    # common shell builtins that people are used to, but which aren't actually
-    # full-fledged system binaries
+    # methods that begin with "custom_" are custom builtins and will
+    # override any program that exists in our path.  this is useful
+    # for things like common shell builtins that people are used to,
+    # but which aren't actually full-fledged system binaries
 
     def custom_cd(self, path):
         os.chdir(path)
