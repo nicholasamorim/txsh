@@ -1,4 +1,4 @@
-## txsh 
+## txsh
 
 txsh is a project *largely* inspired by [sh] (https://github.com/amoffat/sh). txsh is a dynamic wrapper around [Twisted] (http://twistedmatrix.com) [ProcessProtocol] (https://twistedmatrix.com/documents/current/api/twisted.internet.protocol.ProcessProtocol.html) and [spawnProcess] (http://twistedmatrix.com/documents/current/api/twisted.internet.interfaces.IReactorProcess.spawnProcess.html) that allows you to call any program as if it were a function and return a deferred with its exit code and output:
 
@@ -24,10 +24,9 @@ txsh is **not** a collection of system commands implemented in Twisted.
 
     $> pip install txsh
 
-# Complete documentation @ http://nicholasamorim.github.com/txsh
-
 
 ### To-Do
+    - Proper documentation / tutorials.
     - Tests
     - Subcommands
     - Redirection of stdout and stderr to file-like objects.
