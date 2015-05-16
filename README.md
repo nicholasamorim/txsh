@@ -18,6 +18,28 @@ d.addCallback(my_callback)
 reactor.run()
 ```
 
+### Examples
+
+```
+from txsh import ls, curl, wc
+
+# arguments should go separated
+d = ls("-l", "-h") # ls -l -h
+
+# Keyword arguments are also supported
+d = ls(help=True)  # ls --help
+
+# Underscores will be replaced by dashes
+d = curl(connect_timeout=10, url="http://something")  # curl --connect-timeout 10 --url http:/something
+
+# You can pipe
+d = wc(ls())
+
+# You can bake
+ll = ls.bake("-l", "-h")
+d = ll()  # Now ll will always output ls -l -h
+```
+
 txsh is **not** a collection of system commands implemented in Twisted.
 
 # Installation
