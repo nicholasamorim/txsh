@@ -20,10 +20,11 @@ class Command(object):
         cmd = resolve_command(cmd)
         return Command(cmd)
 
-    def __init__(self, cmd):
+    def __init__(self, cmd, subcommand=None):
         """
         """
         self.cmd = cmd
+        self.subcommand = subcommand
         self._args = []
 
     def __str__(self):
@@ -31,6 +32,12 @@ class Command(object):
         """
         return '{} {}'.format(
             self.cmd, ' '.join(self._args))
+
+    def __getattr__(self, name):
+        """Sugar for subcommands. This merely returns
+        a new Command back with a subcommand inside.
+        """
+        return Command(self.cmd, name)
 
     def bake(self, *args, **kwargs):
         """Bakes arguments for subsequent runnings. An example:
@@ -132,6 +139,8 @@ class Command(object):
         # Twisted requires the first arg to be the command itself
         args = self.build_arguments(*args, **kwargs)
         args.insert(0, self.cmd)
+        if self.subcommand:
+            args.insert(1, self.subcommand)
         args.extend(self._args)
         process = self._spawn(txsh_protocol, args, env)
         return process.proto._process_deferred
