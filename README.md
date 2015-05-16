@@ -21,7 +21,7 @@ reactor.run()
 ### Examples
 
 ```
-from txsh import ls, curl, wc
+from txsh import ls, curl, wc, git, sudo
 
 # arguments should go separated
 d = ls("-l", "-h") # ls -l -h
@@ -34,6 +34,10 @@ d = curl(connect_timeout=10, url="http://something")  # curl --connect-timeout 1
 
 # You can pipe
 d = wc(ls())
+
+# You can have subcommands
+d = git.branch()  # Same as git("branch")
+d = sudo.ls("-h")  # Same as sudo("ls", "-h")
 
 # You can bake
 ll = ls.bake("-l", "-h")
@@ -50,7 +54,6 @@ txsh is **not** a collection of system commands implemented in Twisted.
 ### To-Do
     - Proper documentation / tutorials.
     - Tests
-    - Subcommands
     - Redirection of stdout and stderr to file-like objects.
     - Passing of any object, Queue, or any iterable (list, set, dictionary, etc) to stdin
     - Custom success exit codes
