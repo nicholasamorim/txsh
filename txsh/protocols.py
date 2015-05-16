@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 from collections import namedtuple
 
+from twisted.python import log
 from twisted.internet import protocol, defer
 
 
@@ -68,13 +69,13 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         This usually happens when the program terminates.
         """
         if self._debug:
-            print 'outconnectionlost'
+            log.msg('outconnectionlost called.')
 
     def errConnectionLost(self):
         """Same as outConnectionLost, but for stderr instead of stdout.
         """
         if self._debug:
-            print 'errConnectionLost called.'
+            log.msg('errConnectionLost called.')
 
     def outReceived(self, data):
         """This is called with data that was received from the process
@@ -89,7 +90,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         :param data: A chunk of data coming from stdout.
         """
         if self._debug:
-            print 'outReceived called with data: ', data
+            log.msg('outReceived called with data: ', data)
         self._stdout.append(data)
 
     def errReceived(self, data):
@@ -99,7 +100,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         :param data: A chunk of data coming from stderr.
         """
         if self._debug:
-            print 'errReceived called with data: ', data
+            log.msg('errReceived called with data: ', data)
         self._stderr.append(data)
 
     def processExited(self, status):
@@ -116,7 +117,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         .exitCode attribute).
         """
         if self._debug:
-            print 'processExited called with status: ', status
+            log.msg('processExited called with status: ', status)
 
         if status.value.signal:
             self._status = status.value.signal
@@ -136,7 +137,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         .exitCode attribute).
         """
         if self._debug:
-            print 'onProcessEnded', status
+            log.msg('onProcessEnded', status)
 
         output = self.Output(
             self._status,
