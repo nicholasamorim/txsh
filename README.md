@@ -30,7 +30,8 @@ d = ls("-l", "-h") # ls -l -h
 d = ls(help=True)  # ls --help
 
 # Underscores will be replaced by dashes
-d = curl(connect_timeout=10, url="http://something")  # curl --connect-timeout 10 --url http:/something
+d = curl(connect_timeout=10, url="http://something")
+# curl --connect-timeout 10 --url http:/something
 
 # You can pipe
 d = wc(ls())
