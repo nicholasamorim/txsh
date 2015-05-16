@@ -11,7 +11,11 @@ from protocols import TxShProcessProtocol, DeferredProcess
 class Command(object):
     @staticmethod
     def factory(cmd, **default_kwargs):
-        """
+        """This is used by the Environment class to get a new instance
+        of this class. It resolves the command using `resolve_command`
+        and returns an instance with it.
+
+        :param cmd: A command string.
         """
         cmd = resolve_command(cmd)
         return Command(cmd)
@@ -23,31 +27,47 @@ class Command(object):
         self._args = []
 
     def __str__(self):
-        """
+        """Returns what the command would look like if ran into the shell.
         """
         return '{} {}'.format(
             self.cmd, ' '.join(self._args))
 
     def bake(self, *args, **kwargs):
-        """
+        """Bakes arguments for subsequent runnings. An example:
+
+            >>> ll = ls.bake("-l")
+            >>> ll()  # This will always run "ls -l"
+
+        This returns a new `Command` instance, leaving the original
+        untouched.
         """
         new_cmd = Command(self.cmd)
         new_cmd._bake(*args, **kwargs)
         return new_cmd
 
     def _bake(self, *args, **kwargs):
-        """
+        """The internal method used to bake the argument list
+        into a `Command` instance.
+
+        :param args: A list of args, e.g: ['-l', '-h']
+        :param kwargs: A list of kwargs, e.g: {'shell': True}
         """
         self._args = self.build_arguments(*args, **kwargs)
 
     def clear(self):
-        """
+        """Clears any baked arguments of this instance. Probably not
+        commonly used.
         """
         self._args = []
         return self
 
     def build_arguments(self, *cmd_args, **cmd_kwargs):
-        """
+        """This builds the arguments. shell=True becomes --shell,
+        level=2 becomes --level 2 (two separate arguments) and
+        o=True becomes -o.
+
+        Any keyword passed with underscores will have them replaced by
+        dashes, e.g: please_forgive becomes --please-forgive
         """
         args = []
         args.extend(cmd_args)
@@ -55,10 +75,9 @@ class Command(object):
         for raw_key, value in cmd_kwargs.items():
             if len(raw_key) == 1:
                 args.append('-{}'.format(raw_key))
-                continue
-
-            key = raw_key.replace('_', '-')
-            args.append('--{}'.format(key))
+            else:
+                key = raw_key.replace('_', '-')
+                args.append('--{}'.format(key))
 
             if value is True:
                 # If True, it is enough.
@@ -70,12 +89,16 @@ class Command(object):
         return args
 
     def _spawn(self, protocol, args, env=None):
-        """
+        """Returns an object which provides IProcessTransport.
+
+        :param protocol: An instance of `TxShProcessProtocol`.
+        :param args: The arguments to be passed into the process.
+        :param env: The environment variables.
         """
         return reactor.spawnProcess(protocol, self.cmd, args, env=env)
 
     def _make_protocol(self, stdin=None, debug=False):
-        """
+        """Returns a `TxShProcessProtocol`.
         """
         return TxShProcessProtocol(
             self.cmd,
@@ -83,6 +106,14 @@ class Command(object):
             _debug=debug)
 
     def __call__(self, *args, **kwargs):
+        """Used when the import command is called. A few special (and optional)
+        parameters can be passed. They are listed below:
+
+        :param _in: Something to feed stdin (optional).
+        :param _env: A dictionary of environment variables on which the process
+        should run under. Defaults to `os.environ`.
+        :param _debug: If true, debug messages will be printed.
+        """
         env = kwargs.pop('_env', os.environ)
         debug = kwargs.pop('_debug', False)
         _in = kwargs.pop('_in', None)

@@ -6,7 +6,7 @@ from twisted.internet import protocol, defer
 
 
 class DeferredProcess(defer.Deferred):
-    """A specialized Deferred that adds a .signal method.
+    """A specialized Deferred that adds a .signal method to a deferred.
     """
     def __init__(self, proto):
         self.proto = proto
@@ -25,7 +25,9 @@ class DeferredProcess(defer.Deferred):
 
 
 class TxShProcessProtocol(protocol.ProcessProtocol):
-    """
+    """This is the protocol responsible to communicate with the
+    process when it's set to run. An instance of this is passed
+    into reactor.spawnProcess.
     """
     Output = namedtuple('Output', ['status', 'stdout', 'stderr'])
 
