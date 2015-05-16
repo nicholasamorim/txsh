@@ -20,7 +20,7 @@ reactor.run()
 
 ### Examples
 
-```
+```python
 from txsh import ls, curl, wc, git, sudo
 
 # arguments should go separated
