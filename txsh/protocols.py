@@ -22,7 +22,7 @@ class DeferredProcess(defer.Deferred):
 
         :param sig: A signal string, e.g.: KILL'
         """
-        self.proto.transport.signalProcess(sig)
+        self.proto.sendSignal(sig)
 
 
 class TxShProcessProtocol(protocol.ProcessProtocol):
