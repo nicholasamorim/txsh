@@ -116,7 +116,7 @@ class Command(object):
     def _make_protocol(self, **kwargs):
         """Returns a `TxShProcessProtocol`.
         """
-        return TxShProcessProtocol(self.cmd, **kwargs)
+        return TxShProcessProtocol(**kwargs)
 
     def _is_string(self, obj):
         """Checks if a object is a string.
