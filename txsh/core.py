@@ -30,8 +30,17 @@ class Command(object):
     def __str__(self):
         """Returns what the command would look like if ran into the shell.
         """
-        return '{} {}'.format(
-            self.cmd, ' '.join(self._args))
+        if not self._args and not self.subcommand:
+            return self.cmd
+        elif not self._args and self.subcommand:
+            return '{} {}'.format(
+                self.cmd, self.subcommand)
+        elif self._args and not self.subcommand:
+            return '{} {}'.format(
+                self.cmd, ' '.join(self._args))
+        else:
+            return '{} {} {}'.format(
+                self.cmd, self.subcommand, ' '.join(self._args))
 
     def __getattr__(self, name):
         """Sugar for subcommands. This merely returns
@@ -48,7 +57,7 @@ class Command(object):
         This returns a new `Command` instance, leaving the original
         untouched.
         """
-        new_cmd = Command(self.cmd)
+        new_cmd = Command(self.cmd, self.subcommand)
         new_cmd._bake(*args, **kwargs)
         return new_cmd
 
