@@ -36,12 +36,36 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         """
         """
         self.cmd = cmd
-        self._stdin = kwargs.get('_stdin', None)
-        self._debug = kwargs.get('_debug', False)
+        self._stdin = kwargs.get('stdin', None)
+        self._debug = kwargs.get('debug', False)
+        self._stdout = kwargs.get('stdout', [])
+        self._stderr = kwargs.get('stderr', [])
         self._process_deferred = DeferredProcess(self)
         self._status = None
-        self._stdout = []
-        self._stderr = []
+
+    def write_stream(self, obj, data):
+        """Writes stream to several types of object.
+        """
+        if isinstance(obj, list):
+            obj.append(data)
+        elif isinstance(obj, defer.Deferred):
+            obj.callback(data)
+        elif isinstance(obj, defer.DeferredQueue):
+            obj.put(data)
+        elif callable(obj):
+            obj(data)
+        else:
+            obj.write(data)  # file-like object
+
+    def write_to_stdout(self, data):
+        """Writes data to stdout.
+        """
+        self.write_stream(self._stdout, data)
+
+    def write_to_stderr(self, data):
+        """Writes data to stderr.
+        """
+        self.write_stream(self._stderr, data)
 
     def sendSignal(self, signal):
         """This is called when a signal is fired to our process.
@@ -91,7 +115,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         """
         if self._debug:
             log.msg('outReceived called with data: ', data)
-        self._stdout.append(data)
+        self.write_to_stdout(data)
 
     def errReceived(self, data):
         """This is called with data from the process stderr pipe.
@@ -125,6 +149,13 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
 
         self._status = getattr(status.value, 'exitCode', 0)
 
+    def get_output(self, obj):
+        """If stdout or stdout redirection is activated, this will
+        return none.
+        """
+
+        return ''.join(self._stdout) if type(self._stdout) is list else None
+
     def processEnded(self, status):
         """This is called when all the file descriptors associated with the
         child process have been closed and the process has been reaped. This
@@ -139,8 +170,8 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         if self._debug:
             log.msg('onProcessEnded', status)
 
-        output = self.Output(
-            self._status,
-            ''.join(self._stdout),
-            ''.join(self._stderr))
+        stdout = self.get_output(self._stdout)
+        stderr = self.get_output(self._stderr)
+
+        output = self.Output(self._status, stdout, stderr)
         self._process_deferred.callback(output)
