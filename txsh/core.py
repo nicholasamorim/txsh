@@ -104,19 +104,31 @@ class Command(object):
         """
         return reactor.spawnProcess(protocol, self.cmd, args, env=env)
 
-    def _make_protocol(self, stdin=None, debug=False):
+    def _make_protocol(self, **kwargs):
         """Returns a `TxShProcessProtocol`.
         """
-        return TxShProcessProtocol(
-            self.cmd,
-            _stdin=stdin,
-            _debug=debug)
+        return TxShProcessProtocol(self.cmd, **kwargs)
+
+    def _is_string(self, obj):
+        """Checks if a object is a string.
+        """
+        return isinstance(obj, unicode) or isinstance(obj, str)
 
     def __call__(self, *args, **kwargs):
         """Used when the import command is called. A few special (and optional)
         parameters can be passed. They are listed below:
 
         :param _in: Something to feed stdin (optional).
+        :param _out: If passed, stdout will be redirected into this. It can be
+        a file-like object, a Deferred, a DeferredQueue or a callable.
+        If a string is passed, it will be assumed to be a filename that we
+        can open and write to it. You will not receive the stdout at the
+        callback if you opt to redirect it (it will be None).
+        :param _err: If passed, stderr will be redirected into this. It can be
+        a file-like object, a Deferred, a DeferredQueue or a callable.
+        If a string is passed, it will be assumed to be a filename that we
+        can open and write to it. You will not receive the stderr at the
+        callback if you opt to redirect it (it will be None).
         :param _env: A dictionary of environment variables on which the process
         should run under. Defaults to `os.environ`.
         :param _debug: If true, debug messages will be printed.
@@ -124,6 +136,14 @@ class Command(object):
         env = kwargs.pop('_env', os.environ)
         debug = kwargs.pop('_debug', False)
         _in = kwargs.pop('_in', None)
+        _out = kwargs.pop('_out', None)
+        _err = kwargs.pop('_err', None)
+
+        if self._is_string(_out):
+            _out = open(_out, 'wb')
+
+        if self._is_string(_err):
+            _err = open(_err, 'wb')
 
         if args and isinstance(args[0], DeferredProcess):
             # This is a piped call.
@@ -135,7 +155,9 @@ class Command(object):
             d.addCallback(lambda process: process.proto._process_deferred)
             return d
 
-        txsh_protocol = self._make_protocol(stdin=_in)
+        txsh_protocol = self._make_protocol(
+            stdin=_in, stdout=_out, stderr=_err, debug=debug)
+
         # Twisted requires the first arg to be the command itself
         args = self.build_arguments(*args, **kwargs)
         args.insert(0, self.cmd)

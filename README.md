@@ -43,6 +43,27 @@ d = sudo.ls("-h")  # Same as sudo("ls", "-h")
 # You can bake
 ll = ls.bake("-l", "-h")
 d = ll()  # Now ll will always output ls -l -h
+
+# You can redirect stderr or stdout to a file using special args _out and _err
+d = ls("-l", _out=open('output.log', 'wb'))
+
+# In fact, you can use any file-like object like a StringIO.
+
+# A callabble.
+def alert(error):
+    pass  # Do something
+
+d = ls("-l", _err=alert) # Will redirect stderr to alert function.
+
+# If you pass a string, we will simply assume it's a filename.
+d = ls("-l", _out="output.log", _err="error.log")
+
+# You can also pass a DeferredQueue or a simple Deferred.
+queue = DeferredQueue()
+my_defer = Deferred()
+d = ls("-l", _out=queue, _err=my_defer)
+# When stdout is ready, it will call queue.put
+# When stderr is ready, it will call my_defer.callback
 ```
 
 txsh is **not** a collection of system commands implemented in Twisted.
@@ -55,7 +76,6 @@ txsh is **not** a collection of system commands implemented in Twisted.
 ### To-Do
     - Proper documentation / tutorials.
     - Tests
-    - Redirection of stdout and stderr to file-like objects.
     - Passing of any object, Queue, or any iterable (list, set, dictionary, etc) to stdin
     - Custom success exit codes
     - Raising Failures if exit_code is not successful so user can add errbacks to deal with them.
