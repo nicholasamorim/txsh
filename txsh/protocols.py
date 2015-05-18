@@ -57,6 +57,16 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         else:
             obj.write(data)  # file-like object
 
+    def close_streams(self):
+        """
+        """
+        streams = [self._stdout, self._stderr]
+        for stream in streams:
+            try:
+                stream.close()
+            except AttributeError:
+                pass
+
     def write_to_stdout(self, data):
         """Writes data to stdout.
         """
@@ -170,6 +180,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         if self._debug:
             log.msg('onProcessEnded', status)
 
+        self.close_streams()
         stdout = self.get_output(self._stdout)
         stderr = self.get_output(self._stderr)
 
