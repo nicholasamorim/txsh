@@ -22,7 +22,7 @@ class DeferredProcess(defer.Deferred):
 
         :param sig: A signal string, e.g.: KILL'
         """
-        self.proto.transport.signalProcess(sig)
+        self.proto.sendSignal(sig)
 
 
 class TxShProcessProtocol(protocol.ProcessProtocol):
@@ -32,10 +32,9 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
     """
     Output = namedtuple('Output', ['status', 'stdout', 'stderr'])
 
-    def __init__(self, cmd, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         """
-        self.cmd = cmd
         self._stdin = kwargs.get('stdin', None)
         self._debug = kwargs.get('debug', False)
         self._stdout = kwargs.get('stdout', [])
