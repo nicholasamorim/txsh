@@ -37,10 +37,15 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         """
         self._stdin = kwargs.get('stdin', None)
         self._debug = kwargs.get('debug', False)
-        self._stdout = kwargs.get('stdout', [])
-        self._stderr = kwargs.get('stderr', [])
         self._process_deferred = DeferredProcess(self)
         self._status = None
+
+        self._stdout = kwargs.get('stdout', None)
+        self._stderr = kwargs.get('stderr', None)
+        if self._stdout is None:
+            self._stdout = []
+        if self._stderr is None:
+            self._stderr = []
 
     def write_stream(self, obj, data):
         """Writes stream to several types of object.
@@ -134,7 +139,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         """
         if self._debug:
             log.msg('errReceived called with data: ', data)
-        self._stderr.append(data)
+        self.write_to_stderr(data)
 
     def processExited(self, status):
         """This is called when the child process has been reaped, and receives
@@ -163,7 +168,7 @@ class TxShProcessProtocol(protocol.ProcessProtocol):
         return none.
         """
 
-        return ''.join(self._stdout) if type(self._stdout) is list else None
+        return ''.join(obj) if type(obj) is list else None
 
     def processEnded(self, status):
         """This is called when all the file descriptors associated with the
