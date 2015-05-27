@@ -82,3 +82,4 @@ txsh is **not** a collection of system commands implemented in Twisted.
     - Glob Expansion
     - Advanced piping
     - usePTY
+    - Python 3
